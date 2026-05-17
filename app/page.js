@@ -1,0 +1,245 @@
+'use client';
+import { useState, useEffect } from 'react';
+import PRInput from '@/components/PRInput';
+import ReviewOutput from '@/components/ReviewOutput';
+import DiffViewer from '@/components/DiffViewer';
+
+export default function Home() {
+  const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('review');
+
+  const loadingSteps = [
+    'Initializing CodeSage coordinator...',
+    'Fetching Pull Request metadata from GitHub API...',
+    'Downloading raw diff nodes and analyzing modifications...',
+    'Running cognitive code review via Google Gemini 2.5 Flash...',
+    'Parsing structured findings, scoring, and formatting...'
+  ];
+
+  // Rotate loading steps while compiling data for active feedback feel
+  useEffect(() => {
+    if (!loading) {
+      setLoadingStep(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingStep(prev => (prev < loadingSteps.length - 1 ? prev + 1 : prev));
+    }, 2800);
+    return () => clearInterval(interval);
+  }, [loading]);
+
+  async function handleReview(prUrl) {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setLoadingStep(0);
+
+    try {
+      const res = await fetch('/api/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prUrl }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Review process failed. Verify credentials.');
+      setResult(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="min-h-screen pb-20">
+      {/* Dynamic Background Mesh (CSS Radial Orbs) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-20">
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/[0.04] rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/[0.04] rounded-full blur-[140px]"></div>
+      </div>
+
+      {/* Sleek Navigation Bar */}
+      <header className="glass-panel border-b border-white/5 sticky top-0 z-40 backdrop-blur-md px-6 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 group">
+          <div className="w-10 h-10 bg-gradient-to-tr from-emerald-500 to-cyan-500 rounded-xl flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-emerald-500/10 transition-transform duration-300 group-hover:scale-105">
+            <span className="text-base font-extrabold tracking-tighter">CS</span>
+          </div>
+          <div>
+            <h1 className="text-md font-bold text-white tracking-tight leading-none group-hover:text-emerald-400 transition-colors duration-200">
+              CodeSage AI
+            </h1>
+            <span className="text-[10px] text-gray-400 font-medium tracking-wide">
+              SMART PR REVIEWER
+            </span>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-gray-500 bg-slate-900 px-2.5 py-1 rounded-md border border-white/5 tracking-wider">
+            Powered by Gemini 2.5 Flash
+          </span>
+          <a
+            href="https://github.com/settings/tokens"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1"
+          >
+            <span>PAT Guide</span>
+            <span>↗</span>
+          </a>
+        </div>
+      </header>
+
+      {/* Body Container */}
+      <div className="max-w-5xl mx-auto px-6 py-12 md:py-16 space-y-12">
+        {/* Dynamic Hero Title Section */}
+        <div className="text-center space-y-4 max-w-2xl mx-auto">
+          <span className="text-xs uppercase font-extrabold tracking-widest text-emerald-500 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20">
+            AI-powered code review
+          </span>
+          <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white leading-none">
+            Review Pull Requests like a{' '}
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent animate-text-shine">
+              Senior Engineer
+            </span>
+          </h2>
+          <p className="text-gray-400 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
+            Provide a GitHub Pull Request URL. Get instant structure, security audits, warning counts, scores, and Monaco-powered visual code diff displays.
+          </p>
+        </div>
+
+        {/* PR URL Submission Section */}
+        <PRInput onReview={handleReview} loading={loading} />
+
+        {/* Dynamic Multi-Stage Loader */}
+        {loading && (
+          <div className="glass-panel border-white/5 rounded-2xl p-8 flex flex-col items-center justify-center gap-6 animate-pulse-slow">
+            {/* Spinning Neon Wheel */}
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-full border-4 border-slate-900"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-cyan-500 animate-spin"></div>
+            </div>
+            
+            {/* Loading stage lists */}
+            <div className="text-center space-y-2">
+              <h4 className="text-white text-base font-bold">Review in Progress</h4>
+              <p className="text-emerald-400 text-xs font-mono font-medium tracking-wide">
+                ⚡ {loadingSteps[loadingStep]}
+              </p>
+            </div>
+            
+            {/* Horizontal progress steps tracker */}
+            <div className="w-full max-w-md flex justify-between gap-1 mt-2">
+              {loadingSteps.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${
+                    idx <= loadingStep ? 'bg-gradient-to-r from-emerald-500 to-cyan-500' : 'bg-slate-800'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Error Cards */}
+        {error && (
+          <div className="p-5 bg-rose-950/20 border border-rose-800/40 rounded-2xl text-rose-300 text-sm flex gap-3 relative overflow-hidden animate-fade-in">
+            <span className="text-lg">⚠️</span>
+            <div className="space-y-1">
+              <h5 className="font-bold text-rose-200">Review Coordination Error</h5>
+              <p className="opacity-90">{error}</p>
+              <div className="pt-2 text-xs text-rose-400 font-medium">
+                💡 Hint: Make sure your <code>GEMINI_API_KEY</code> in <code>.env.local</code> is valid. For private repositories, verify your GITHUB_TOKEN has access permissions.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Successful Review Results Block */}
+        {result && (
+          <div className="space-y-8 animate-fade-in">
+            {/* PR Info Header Panel */}
+            <div className="glass-panel border-white/5 rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row gap-5 items-center justify-between">
+              {/* Left Column: Title and Branches */}
+              <div className="space-y-2.5 text-center md:text-left flex-1 min-w-0">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <span className="text-[10px] uppercase font-bold text-gray-500 bg-slate-950 px-2 py-0.5 rounded border border-white/5 tracking-wider">
+                    TARGET REPO
+                  </span>
+                  <span className="text-xs font-mono font-bold text-gray-400 flex items-center gap-1">
+                    <code>{result.prData.baseBranch}</code>
+                    <span className="text-[10px] text-gray-600">←</span>
+                    <code className="text-emerald-400 bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-900/30">
+                      {result.prData.headBranch}
+                    </code>
+                  </span>
+                </div>
+                <h3 className="font-extrabold text-lg md:text-xl text-white tracking-tight truncate max-w-full" title={result.prData.title}>
+                  {result.prData.title}
+                </h3>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-xs text-gray-400">
+                  <span className="flex items-center gap-1.5">
+                    {result.prData.authorAvatar ? (
+                      <img 
+                        src={result.prData.authorAvatar} 
+                        alt={result.prData.author}
+                        className="w-4 h-4 rounded-full border border-white/10" 
+                      />
+                    ) : (
+                      <span>👤</span>
+                    )}
+                    <span className="font-semibold text-gray-300">{result.prData.author}</span>
+                  </span>
+                  <span>📁 {result.prData.changedFiles} files changed</span>
+                  <span className="text-emerald-400 font-mono">+{result.prData.additions}</span>
+                  <span className="text-rose-400 font-mono">-{result.prData.deletions}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Tab Selection Row */}
+            <div className="flex border-b border-white/5 gap-2">
+              <button
+                onClick={() => setActiveTab('review')}
+                className={`pb-3 px-4 text-sm font-semibold relative transition-all ${
+                  activeTab === 'review' 
+                    ? 'text-emerald-400' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <span>🔍 AI Review Report</span>
+                {activeTab === 'review' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"></span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('diff')}
+                className={`pb-3 px-4 text-sm font-semibold relative transition-all ${
+                  activeTab === 'diff' 
+                    ? 'text-emerald-400' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <span>📄 Monaco Diff Viewer</span>
+                {activeTab === 'diff' && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full"></span>
+                )}
+              </button>
+            </div>
+
+            {/* Tab view containers */}
+            <div className="transition-all duration-300">
+              {activeTab === 'review' && <ReviewOutput review={result.review} />}
+              {activeTab === 'diff' && <DiffViewer diff={result.prData.diff} />}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
