@@ -28,7 +28,7 @@ export default function AuthPage() {
           throw new Error("Password must be at least 6 characters.");
         }
         await createUserWithEmailAndPassword(auth, email, password);
-        setSuccess("Account successfully forged! Logging you in...");
+        setSuccess("Account successfully created! Logging you in...");
       }
     } catch (err) {
       // Clean up Firebase error messages to be user-friendly
@@ -107,7 +107,7 @@ export default function AuthPage() {
         <p className="text-gray-400 text-xs mb-6 leading-relaxed">
           {isLogin
             ? "Sign in to access your AI-powered reviews."
-            : "Forge reviews like a 10+ year veteran engineer."}
+            : "Review pull requests like a 10+ year veteran engineer."}
         </p>
 
         {/* Alerts */}
@@ -180,9 +180,9 @@ export default function AuthPage() {
               Authenticating...
             </span>
           ) : isLogin ? (
-            "Verify & Sign In →"
+            "Sign In →"
           ) : (
-            "Forge Account →"
+            "Create Account →"
           )}
         </button>
 
