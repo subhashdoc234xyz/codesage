@@ -4,7 +4,16 @@ import PRInput from '@/components/PRInput';
 import ReviewOutput from '@/components/ReviewOutput';
 import DiffViewer from '@/components/DiffViewer';
 
+// Firebase imports for auth protection
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import AuthPage from '@/components/AuthPage';
+
 export default function Home() {
+  // Authentication states
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [result, setResult] = useState(null);
@@ -19,6 +28,15 @@ export default function Home() {
     'Parsing structured findings, scoring, and formatting...'
   ];
 
+  // Firebase auth state subscription
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Rotate loading steps while compiling data for active feedback feel
   useEffect(() => {
     if (!loading) {
@@ -30,6 +48,25 @@ export default function Home() {
     }, 2800);
     return () => clearInterval(interval);
   }, [loading]);
+
+  // Auth Protection Guard Renderings
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 rounded-full border-4 border-slate-900"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-cyan-500 animate-spin"></div>
+        </div>
+        <p className="text-gray-400 text-xs font-mono font-medium tracking-wide">
+          Syncing CodeSage authorization...
+        </p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
 
   async function handleReview(prUrl) {
     setLoading(true);
@@ -78,19 +115,33 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-gray-500 bg-slate-900 px-2.5 py-1 rounded-md border border-white/5 tracking-wider">
-            Powered by Gemini 2.5 Flash
-          </span>
-          <a
-            href="https://github.com/settings/tokens"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1"
-          >
-            <span>PAT Guide</span>
-            <span>↗</span>
-          </a>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline-block text-[10px] uppercase font-bold text-gray-500 bg-slate-900 px-2.5 py-1 rounded-md border border-white/5 tracking-wider">
+              Powered by Gemini 2.5 Flash
+            </span>
+            <a
+              href="https://github.com/settings/tokens"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1"
+            >
+              <span>PAT Guide</span>
+              <span>↗</span>
+            </a>
+          </div>
+
+          <div className="flex items-center gap-3 pl-3 border-l border-white/10">
+            <span className="text-xs text-gray-400 font-mono hidden md:inline-block max-w-[150px] truncate" title={user?.email}>
+              {user?.email}
+            </span>
+            <button
+              onClick={() => signOut(auth)}
+              className="text-[10px] font-bold uppercase text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg transition-all duration-300 active:scale-95"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
