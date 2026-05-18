@@ -107,9 +107,6 @@ export default function Home() {
               Senior Engineer
             </span>
           </h2>
-          <p className="text-gray-400 text-sm md:text-base max-w-xl mx-auto leading-relaxed">
-            Provide a GitHub Pull Request URL. Get instant structure, security audits, warning counts, scores, and Monaco-powered visual code diff displays.
-          </p>
         </div>
 
         {/* PR URL Submission Section */}

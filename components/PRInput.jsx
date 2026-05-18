@@ -1,27 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 
-const DEMO_PRS = [
-  {
-    name: 'React #31377',
-    repo: 'facebook/react',
-    url: 'https://github.com/facebook/react/pull/31377',
-    label: '⚛️ React PR'
-  },
-  {
-    name: 'Next.js #65000',
-    repo: 'vercel/next.js',
-    url: 'https://github.com/vercel/next.js/pull/65000',
-    label: '▲ Next.js PR'
-  },
-  {
-    name: 'Tailwind #14000',
-    repo: 'tailwindlabs/tailwindcss',
-    url: 'https://github.com/tailwindlabs/tailwindcss/pull/14000',
-    label: '🎨 Tailwind PR'
-  }
-];
-
 const PLACEHOLDERS = [
   'https://github.com/facebook/react/pull/31377',
   'https://github.com/vercel/next.js/pull/65000',
@@ -47,11 +26,6 @@ export default function PRInput({ onReview, loading }) {
     if (url.trim()) {
       onReview(url.trim());
     }
-  }
-
-  function handleQuickLoad(demoUrl) {
-    setUrl(demoUrl);
-    onReview(demoUrl);
   }
 
   return (
@@ -111,27 +85,6 @@ export default function PRInput({ onReview, loading }) {
                 </>
               )}
             </button>
-          </div>
-        </div>
-
-        {/* Demo PR Shortcuts */}
-        <div className="pt-2">
-          <div className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider flex items-center gap-2">
-            <span>💡 Try these featured demo PRs:</span>
-          </div>
-          <div className="flex flex-wrap gap-2.5">
-            {DEMO_PRS.map((pr, index) => (
-              <button
-                key={index}
-                type="button"
-                onClick={() => handleQuickLoad(pr.url)}
-                disabled={loading}
-                className="text-xs font-medium bg-slate-900/80 hover:bg-emerald-950/30 text-gray-300 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 px-3.5 py-2 rounded-lg transition-all duration-200 backdrop-blur-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-                title={`Fetch and review ${pr.repo}`}
-              >
-                {pr.label}
-              </button>
-            ))}
           </div>
         </div>
       </form>
