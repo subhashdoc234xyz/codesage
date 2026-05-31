@@ -5,6 +5,22 @@ import ReviewOutput from '@/components/ReviewOutput';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
+async function decompressData(base64) {
+  let str = base64.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  const binary = atob(str);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  const stream = new Blob([bytes]).stream();
+  const decompressedStream = stream.pipeThrough(new DecompressionStream('gzip'));
+  const response = new Response(decompressedStream);
+  const blob = await response.blob();
+  const text = await blob.text();
+  return JSON.parse(text);
+}
+
 export default function SharedReviewPage() {
   const { id } = useParams();
   const [data, setData] = useState(null);
@@ -14,6 +30,22 @@ export default function SharedReviewPage() {
   useEffect(() => {
     async function load() {
       try {
+        if (!id) return;
+
+        // If the id parameter is long, it is a self-contained compressed URL link
+        if (id.length > 20) {
+          try {
+            const decompressed = await decompressData(id);
+            setData(decompressed);
+            setLoading(false);
+            return;
+          } catch (decErr) {
+            console.error('Decompression error:', decErr);
+            throw new Error('Invalid or corrupted share link format.');
+          }
+        }
+
+        // Otherwise fallback to reading from Firestore database
         if (!db) {
           throw new Error('Database connection is not available');
         }

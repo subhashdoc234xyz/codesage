@@ -4,34 +4,64 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { nanoid } from 'nanoid';
 
+async function compressData(data) {
+  const str = JSON.stringify(data);
+  const stream = new Blob([str], { type: 'text/plain' }).stream();
+  const compressedStream = stream.pipeThrough(new CompressionStream('gzip'));
+  const response = new Response(compressedStream);
+  const blob = await response.blob();
+  const buffer = await blob.arrayBuffer();
+  
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
 export default function ShareButton({ prData, review }) {
   const [status, setStatus] = useState('idle'); // idle | loading | copied | error
 
   async function handleShare() {
     setStatus('loading');
     try {
-      const shareId = nanoid(10); // e.g. "aB3kL9mNpQ"
+      let shareUrl = '';
       
-      if (!db) {
-        throw new Error('Database not initialized');
+      try {
+        if (!db) {
+          throw new Error('Database not initialized');
+        }
+
+        const shareId = nanoid(10); // e.g. "aB3kL9mNpQ"
+        
+        // Add a 4-second timeout to prevent waiting too long on Firestore
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Firestore timeout')), 4000)
+        );
+
+        await Promise.race([
+          setDoc(doc(db, 'sharedReviews', shareId), {
+            prData,
+            review,
+            createdAt: serverTimestamp(),
+            shareId,
+          }),
+          timeoutPromise
+        ]);
+
+        shareUrl = `${window.location.origin}/share/${shareId}`;
+      } catch (dbErr) {
+        console.warn('Firestore database write failed or timed out. Falling back to URL-compressed share link:', dbErr);
+        // Compression fallback: encode the entire review payload into the link
+        const compressed = await compressData({ prData, review });
+        shareUrl = `${window.location.origin}/share/${compressed}`;
       }
 
-      // Add a 6-second timeout to prevent infinite hanging
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Share request timed out. Please check your Firebase Firestore database setup/rules.')), 6000)
-      );
-
-      await Promise.race([
-        setDoc(doc(db, 'sharedReviews', shareId), {
-          prData,
-          review,
-          createdAt: serverTimestamp(),
-          shareId,
-        }),
-        timeoutPromise
-      ]);
-
-      const shareUrl = `${window.location.origin}/share/${shareId}`;
       await navigator.clipboard.writeText(shareUrl);
       setStatus('copied');
       setTimeout(() => setStatus('idle'), 3000);
