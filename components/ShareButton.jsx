@@ -32,6 +32,9 @@ export default function ShareButton({ prData, review }) {
     try {
       let shareUrl = '';
       
+      // Strip out the heavy raw diff and description to keep URLs short and database lightweight
+      const { diff, description, ...prDataWithoutDiff } = prData;
+
       try {
         if (!db) {
           throw new Error('Database not initialized');
@@ -46,7 +49,7 @@ export default function ShareButton({ prData, review }) {
 
         await Promise.race([
           setDoc(doc(db, 'sharedReviews', shareId), {
-            prData,
+            prData: prDataWithoutDiff,
             review,
             createdAt: serverTimestamp(),
             shareId,
@@ -57,8 +60,8 @@ export default function ShareButton({ prData, review }) {
         shareUrl = `${window.location.origin}/share/${shareId}`;
       } catch (dbErr) {
         console.warn('Firestore database write failed or timed out. Falling back to URL-compressed share link:', dbErr);
-        // Compression fallback: encode the entire review payload into the link
-        const compressed = await compressData({ prData, review });
+        // Compression fallback: encode the lightweight review payload into the link
+        const compressed = await compressData({ prData: prDataWithoutDiff, review });
         shareUrl = `${window.location.origin}/share/${compressed}`;
       }
 

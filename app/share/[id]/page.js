@@ -32,16 +32,21 @@ export default function SharedReviewPage() {
       try {
         if (!id) return;
 
-        // If the id parameter is long, it is a self-contained compressed URL link
-        if (id.length > 20) {
+        // Clean the ID of any accidentally copied whitespaces, newlines, tabs, or %20 spaces
+        const cleanId = decodeURIComponent(id)
+          .replace(/\s+/g, '')
+          .replace(/%20/g, '');
+
+        // If the cleaned id parameter is long, it is a self-contained compressed URL link
+        if (cleanId.length > 20) {
           try {
-            const decompressed = await decompressData(id);
+            const decompressed = await decompressData(cleanId);
             setData(decompressed);
             setLoading(false);
             return;
           } catch (decErr) {
             console.error('Decompression error:', decErr);
-            throw new Error('Invalid or corrupted share link format.');
+            throw new Error(`Invalid or corrupted share link format: ${decErr.message}`);
           }
         }
 
@@ -49,7 +54,7 @@ export default function SharedReviewPage() {
         if (!db) {
           throw new Error('Database connection is not available');
         }
-        const docRef = doc(db, 'sharedReviews', id);
+        const docRef = doc(db, 'sharedReviews', cleanId);
         const docSnap = await getDoc(docRef);
         if (!docSnap.exists()) {
           throw new Error('Review not found');
