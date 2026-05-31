@@ -1,5 +1,8 @@
 'use client';
 import { useState } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { nanoid } from 'nanoid';
 
 export default function ShareButton({ prData, review }) {
   const [status, setStatus] = useState('idle'); // idle | loading | copied | error
@@ -7,15 +10,20 @@ export default function ShareButton({ prData, review }) {
   async function handleShare() {
     setStatus('loading');
     try {
-      const res = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prData, review }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const shareId = nanoid(10); // e.g. "aB3kL9mNpQ"
+      
+      if (!db) {
+        throw new Error('Database not initialized');
+      }
 
-      const shareUrl = `${window.location.origin}/share/${data.shareId}`;
+      await setDoc(doc(db, 'sharedReviews', shareId), {
+        prData,
+        review,
+        createdAt: serverTimestamp(),
+        shareId,
+      });
+
+      const shareUrl = `${window.location.origin}/share/${shareId}`;
       await navigator.clipboard.writeText(shareUrl);
       setStatus('copied');
       setTimeout(() => setStatus('idle'), 3000);

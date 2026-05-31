@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import ReviewOutput from '@/components/ReviewOutput';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function SharedReviewPage() {
   const { id } = useParams();
@@ -12,10 +14,15 @@ export default function SharedReviewPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`/api/share?id=${id}`);
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error);
-        setData(json);
+        if (!db) {
+          throw new Error('Database connection is not available');
+        }
+        const docRef = doc(db, 'sharedReviews', id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          throw new Error('Review not found');
+        }
+        setData(docSnap.data());
       } catch (err) {
         setError(err.message);
       } finally {

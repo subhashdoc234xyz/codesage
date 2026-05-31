@@ -227,7 +227,28 @@ export default function ExportPDFButton({ prData, review }) {
 
       // Save PDF
       const filename = `codesage-review-${prData.author}-${Date.now()}.pdf`;
-      doc.save(filename);
+      if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: filename,
+            types: [{
+              description: 'PDF Document',
+              accept: { 'application/pdf': ['.pdf'] }
+            }]
+          });
+          const writable = await handle.createWritable();
+          const pdfBlob = doc.output('blob');
+          await writable.write(pdfBlob);
+          await writable.close();
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            console.error('File System Access API error, falling back:', err);
+            doc.save(filename);
+          }
+        }
+      } else {
+        doc.save(filename);
+      }
     } catch (err) {
       console.error('PDF export error:', err);
       alert('PDF export failed. Please try again.');
