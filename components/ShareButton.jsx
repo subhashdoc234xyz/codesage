@@ -16,12 +16,20 @@ export default function ShareButton({ prData, review }) {
         throw new Error('Database not initialized');
       }
 
-      await setDoc(doc(db, 'sharedReviews', shareId), {
-        prData,
-        review,
-        createdAt: serverTimestamp(),
-        shareId,
-      });
+      // Add a 6-second timeout to prevent infinite hanging
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Share request timed out. Please check your Firebase Firestore database setup/rules.')), 6000)
+      );
+
+      await Promise.race([
+        setDoc(doc(db, 'sharedReviews', shareId), {
+          prData,
+          review,
+          createdAt: serverTimestamp(),
+          shareId,
+        }),
+        timeoutPromise
+      ]);
 
       const shareUrl = `${window.location.origin}/share/${shareId}`;
       await navigator.clipboard.writeText(shareUrl);
