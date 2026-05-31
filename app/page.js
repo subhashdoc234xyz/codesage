@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import PRInput from '@/components/PRInput';
 import ReviewOutput from '@/components/ReviewOutput';
 import DiffViewer from '@/components/DiffViewer';
+import ShareButton from '@/components/ShareButton';
+import ExportPDFButton from '@/components/ExportPDFButton';
 
 // Firebase imports for auth protection
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -252,6 +254,12 @@ export default function Home() {
                   <span className="text-rose-400 font-mono">-{result.prData.deletions}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Action Buttons — Share and Export */}
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
+              <ShareButton prData={result.prData} review={result.review} />
+              <ExportPDFButton prData={result.prData} review={result.review} />
             </div>
 
             {/* Visual Tab Selection Row */}
