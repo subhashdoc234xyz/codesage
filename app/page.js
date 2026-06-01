@@ -1,10 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import PRInput from '@/components/PRInput';
+import DiffInput from '@/components/DiffInput';
 import ReviewOutput from '@/components/ReviewOutput';
 import DiffViewer from '@/components/DiffViewer';
 import ShareButton from '@/components/ShareButton';
 import ExportPDFButton from '@/components/ExportPDFButton';
+import { sendReviewEmail } from '@/lib/emailjs';
+
 
 // Firebase imports for auth protection
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -21,6 +24,8 @@ export default function Home() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('review');
+  const [inputMode, setInputMode] = useState('url'); // 'url' or 'diff'
+  const [emailSent, setEmailSent] = useState(false);
 
   const loadingSteps = [
     'Initializing CodeSage coordinator...',
@@ -90,6 +95,49 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Review process failed. Verify credentials.');
       setResult(data);
+      if (data?.review && user?.email) {
+        sendReviewEmail({
+          toEmail: user.email,
+          prTitle: data.prData.title,
+          review: data.review,
+        }).then(() => {
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 4000);
+        });
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRawDiffReview(diff) {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    setLoadingStep(0);
+
+    try {
+      const res = await fetch('/api/review-diff', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ diff }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Review failed');
+      setResult(data);
+      if (data?.review && user?.email) {
+        sendReviewEmail({
+          toEmail: user.email,
+          prTitle: 'Raw Diff Review',
+          review: data.review,
+        }).then(() => {
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 4000);
+        });
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -167,7 +215,39 @@ export default function Home() {
         </div>
 
         {/* PR URL Submission Section */}
-        <PRInput onReview={handleReview} loading={loading} />
+        <div className="mb-8">
+          {/* Input Mode Toggle */}
+          <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 mb-4 w-fit">
+            <button
+              onClick={() => setInputMode('url')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                inputMode === 'url'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              🔗 GitHub PR URL
+            </button>
+            <button
+              onClick={() => setInputMode('diff')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                inputMode === 'diff'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              📋 Paste Raw Diff
+            </button>
+          </div>
+
+          {/* Input Components */}
+          {inputMode === 'url' && (
+            <PRInput onReview={handleReview} loading={loading} />
+          )}
+          {inputMode === 'diff' && (
+            <DiffInput onReview={handleRawDiffReview} loading={loading} />
+          )}
+        </div>
 
         {/* Dynamic Multi-Stage Loader */}
         {loading && (
@@ -211,6 +291,14 @@ export default function Home() {
                 💡 Hint: Make sure your <code>GEMINI_API_KEY</code> in <code>.env.local</code> is valid. For private repositories, verify your GITHUB_TOKEN has access permissions.
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Email Sent Toast Notification */}
+        {emailSent && (
+          <div className="mt-4 flex items-center gap-2 text-emerald-300 text-sm bg-emerald-950 border border-emerald-800 rounded-xl px-4 py-3 animate-fade-in">
+            <span>✅</span>
+            <span>Review summary sent to <strong>{user?.email}</strong></span>
           </div>
         )}
 
