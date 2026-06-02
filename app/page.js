@@ -186,8 +186,16 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3 pl-3 border-l border-white/10">
-            <span className="text-xs text-gray-400 font-mono hidden md:inline-block max-w-[150px] truncate" title={user?.email}>
-              {user?.email}
+            {user?.photoURL && (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="w-6 h-6 rounded-full border border-white/20 object-cover"
+                referrerPolicy="no-referrer"
+              />
+            )}
+            <span className="text-xs text-gray-300 font-medium hidden md:inline-block max-w-[150px] truncate" title={user?.displayName || user?.email}>
+              {user?.displayName || user?.email}
             </span>
             <button
               onClick={() => signOut(auth)}
