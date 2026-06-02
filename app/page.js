@@ -7,6 +7,7 @@ import DiffViewer from '@/components/DiffViewer';
 import ShareButton from '@/components/ShareButton';
 import ExportPDFButton from '@/components/ExportPDFButton';
 import { sendReviewEmail } from '@/lib/emailjs';
+import { generateShareUrl } from '@/lib/share';
 
 
 // Firebase imports for auth protection
@@ -96,13 +97,16 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Review process failed. Verify credentials.');
       setResult(data);
       if (data?.review && user?.email) {
-        sendReviewEmail({
-          toEmail: user.email,
-          prTitle: data.prData.title,
-          review: data.review,
-        }).then(() => {
-          setEmailSent(true);
-          setTimeout(() => setEmailSent(false), 4000);
+        generateShareUrl(data.prData, data.review).then((shareUrl) => {
+          sendReviewEmail({
+            toEmail: user.email,
+            prTitle: data.prData.title,
+            review: data.review,
+            shareUrl,
+          }).then(() => {
+            setEmailSent(true);
+            setTimeout(() => setEmailSent(false), 4000);
+          });
         });
       }
     } catch (err) {
@@ -129,13 +133,16 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Review failed');
       setResult(data);
       if (data?.review && user?.email) {
-        sendReviewEmail({
-          toEmail: user.email,
-          prTitle: 'Raw Diff Review',
-          review: data.review,
-        }).then(() => {
-          setEmailSent(true);
-          setTimeout(() => setEmailSent(false), 4000);
+        generateShareUrl(data.prData, data.review).then((shareUrl) => {
+          sendReviewEmail({
+            toEmail: user.email,
+            prTitle: 'Raw Diff Review',
+            review: data.review,
+            shareUrl,
+          }).then(() => {
+            setEmailSent(true);
+            setTimeout(() => setEmailSent(false), 4000);
+          });
         });
       }
     } catch (err) {
