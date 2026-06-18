@@ -6,7 +6,7 @@ import ReviewOutput from '@/components/ReviewOutput';
 import DiffViewer from '@/components/DiffViewer';
 import ShareButton from '@/components/ShareButton';
 import ExportPDFButton from '@/components/ExportPDFButton';
-import { sendReviewEmail } from '@/lib/emailjs';
+import { sendReviewEmail } from '@/lib/email';
 import { generateShareUrl } from '@/lib/share';
 
 
@@ -27,6 +27,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('review');
   const [inputMode, setInputMode] = useState('url'); // 'url' or 'diff'
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState(null);
 
   const loadingSteps = [
     'Initializing CodeSage coordinator...',
@@ -96,18 +97,23 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Review process failed. Verify credentials.');
       setResult(data);
+      setEmailError(null);
       if (data?.review && user?.email) {
-        generateShareUrl(data.prData, data.review).then((shareUrl) => {
-          sendReviewEmail({
+        try {
+          const shareUrl = await generateShareUrl(data.prData, data.review);
+          await sendReviewEmail({
             toEmail: user.email,
             prTitle: data.prData.title,
             review: data.review,
             shareUrl,
-          }).then(() => {
-            setEmailSent(true);
-            setTimeout(() => setEmailSent(false), 4000);
           });
-        });
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 4000);
+        } catch (emailErr) {
+          console.error('Failed to send review email:', emailErr);
+          setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
+          setTimeout(() => setEmailError(null), 6000);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -132,18 +138,23 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Review failed');
       setResult(data);
+      setEmailError(null);
       if (data?.review && user?.email) {
-        generateShareUrl(data.prData, data.review).then((shareUrl) => {
-          sendReviewEmail({
+        try {
+          const shareUrl = await generateShareUrl(data.prData, data.review);
+          await sendReviewEmail({
             toEmail: user.email,
             prTitle: 'Raw Diff Review',
             review: data.review,
             shareUrl,
-          }).then(() => {
-            setEmailSent(true);
-            setTimeout(() => setEmailSent(false), 4000);
           });
-        });
+          setEmailSent(true);
+          setTimeout(() => setEmailSent(false), 4000);
+        } catch (emailErr) {
+          console.error('Failed to send review email:', emailErr);
+          setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
+          setTimeout(() => setEmailError(null), 6000);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -314,6 +325,14 @@ export default function Home() {
           <div className="mt-4 flex items-center gap-2 text-emerald-300 text-sm bg-emerald-950 border border-emerald-800 rounded-xl px-4 py-3 animate-fade-in">
             <span>✅</span>
             <span>Review summary sent to <strong>{user?.email}</strong></span>
+          </div>
+        )}
+
+        {/* Email Error Toast Notification */}
+        {emailError && (
+          <div className="mt-4 flex items-center gap-2 text-amber-300 text-sm bg-amber-950/50 border border-amber-800/50 rounded-xl px-4 py-3 animate-fade-in">
+            <span>⚠️</span>
+            <span>Email notification failed: {emailError}. Review was completed — check results below.</span>
           </div>
         )}
 
