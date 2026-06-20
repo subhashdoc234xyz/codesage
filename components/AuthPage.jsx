@@ -63,6 +63,7 @@ export default function AuthPage() {
     try {
       const provider = new GithubAuthProvider();
       provider.addScope('repo');
+      provider.addScope('user:email');
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       

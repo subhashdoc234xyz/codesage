@@ -98,11 +98,11 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Review process failed. Verify credentials.');
       setResult(data);
       setEmailError(null);
-      if (data?.review && user?.email) {
+      if (data?.review) {
         try {
           const shareUrl = await generateShareUrl(data.prData, data.review);
           await sendReviewEmail({
-            toEmail: user.email,
+            toEmail: user?.email || null,
             prTitle: data.prData.title,
             review: data.review,
             shareUrl,
@@ -139,11 +139,11 @@ export default function Home() {
       if (!res.ok) throw new Error(data.error || 'Review failed');
       setResult(data);
       setEmailError(null);
-      if (data?.review && user?.email) {
+      if (data?.review) {
         try {
           const shareUrl = await generateShareUrl(data.prData, data.review);
           await sendReviewEmail({
-            toEmail: user.email,
+            toEmail: user?.email || null,
             prTitle: 'Raw Diff Review',
             review: data.review,
             shareUrl,
