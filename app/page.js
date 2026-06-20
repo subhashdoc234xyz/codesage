@@ -51,11 +51,8 @@ export default function Home() {
         if (db) {
           try {
             const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-            console.log('Firestore user doc exists:', userDoc.exists());
-            console.log('Firestore user doc data:', userDoc.data());
             if (userDoc.exists()) {
               setUserEmail(userDoc.data().email);
-              console.log('Setting userEmail state to:', userDoc.data().email);
             }
           } catch (e) {
             console.error("Error fetching user email from Firestore:", e);
@@ -120,9 +117,6 @@ export default function Home() {
       if (data?.review) {
         try {
           const shareUrl = await generateShareUrl(data.prData, data.review);
-          console.log('toEmail being sent:', userEmail || user?.email || null);
-          console.log('userEmail state:', userEmail);
-          console.log('user.email from Firebase:', user?.email);
           await sendReviewEmail({
             toEmail: userEmail || user?.email || null,
             prTitle: data.prData.title,
@@ -164,9 +158,6 @@ export default function Home() {
       if (data?.review) {
         try {
           const shareUrl = await generateShareUrl(data.prData, data.review);
-          console.log('toEmail being sent:', userEmail || user?.email || null);
-          console.log('userEmail state:', userEmail);
-          console.log('user.email from Firebase:', user?.email);
           await sendReviewEmail({
             toEmail: userEmail || user?.email || null,
             prTitle: 'Raw Diff Review',

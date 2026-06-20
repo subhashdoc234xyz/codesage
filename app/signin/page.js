@@ -39,6 +39,13 @@ export default function SignInPage() {
           uid: user.uid,
           provider: 'google',
         });
+      } else {
+        await setDoc(doc(db, 'users', user.uid), {
+          email: user.email,
+          name: user.displayName,
+          photo: user.photoURL,
+          provider: 'google',
+        }, { merge: true });
       }
       router.push('/');
     } catch (err) {
@@ -70,23 +77,17 @@ export default function SignInPage() {
           const res = await fetch('https://api.github.com/user/emails', {
             headers: { Authorization: `token ${accessToken}` },
           });
-          console.log('GitHub emails API status:', res.status);
           const emails = await res.json();
-          console.log('GitHub emails API response:', emails);
           if (Array.isArray(emails)) {
             const emailObj = emails.find(e => e.primary && e.verified);
-            console.log('Selected primary email:', emailObj);
             if (emailObj) {
               primaryEmail = emailObj.email;
             }
           }
-          console.log('Final primaryEmail before Firestore save:', primaryEmail);
         } catch (e) {
           console.error("Error fetching email from GitHub:", e);
         }
       }
-
-      console.log('Saving to Firestore with email:', primaryEmail);
 
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) {
