@@ -12,8 +12,14 @@ export async function POST(req) {
     const gmailUser = process.env.GMAIL_USER;
     const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
-    // 3. Fallback: if no recipient provided, send to yourself
-    const toEmail = requestedEmail || gmailUser;
+    // 3. Validate recipient
+    if (!requestedEmail) {
+      return NextResponse.json(
+        { error: 'Recipient email (toEmail) is required' },
+        { status: 400 }
+      );
+    }
+    const toEmail = requestedEmail;
 
     // 4. Validate credentials exist
     if (!gmailUser || !gmailAppPassword) {
