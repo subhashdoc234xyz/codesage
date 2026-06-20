@@ -12,7 +12,7 @@ import { generateShareUrl } from '@/lib/share';
 
 // Firebase imports for auth protection
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import AuthPage from '@/components/AuthPage';
 
@@ -21,6 +21,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [userEmail, setUserEmail] = useState(null);
+  const [lastEmailRecipient, setLastEmailRecipient] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -45,25 +46,37 @@ export default function Home() {
       setAuthLoading(false);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+
+    let unsubscribeSnapshot = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      if (currentUser) {
-        if (db) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-            if (userDoc.exists()) {
-              setUserEmail(userDoc.data().email);
-            }
-          } catch (e) {
-            console.error("Error fetching user email from Firestore:", e);
+
+      // Clear previous snapshot listener if it exists
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
+      if (currentUser && db) {
+        // Use real-time snapshot to catch email as soon as it's written (especially for GitHub users)
+        unsubscribeSnapshot = onSnapshot(doc(db, 'users', currentUser.uid), (snapshot) => {
+          if (snapshot.exists()) {
+            setUserEmail(snapshot.data().email);
           }
-        }
+        }, (err) => {
+          console.error("Error listening to user doc:", err);
+        });
       } else {
         setUserEmail(null);
       }
       setAuthLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   // Rotate loading steps while compiling data for active feedback feel
@@ -115,20 +128,24 @@ export default function Home() {
       setResult(data);
       setEmailError(null);
       if (data?.review) {
-        try {
-          const shareUrl = await generateShareUrl(data.prData, data.review);
-          await sendReviewEmail({
-            toEmail: userEmail || user?.email || null,
-            prTitle: data.prData.title,
-            review: data.review,
-            shareUrl,
-          });
-          setEmailSent(true);
-          setTimeout(() => setEmailSent(false), 4000);
-        } catch (emailErr) {
-          console.error('Failed to send review email:', emailErr);
-          setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
-          setTimeout(() => setEmailError(null), 6000);
+        const recipientEmail = userEmail || user?.email;
+        if (recipientEmail) {
+          try {
+            const shareUrl = await generateShareUrl(data.prData, data.review);
+            await sendReviewEmail({
+              toEmail: recipientEmail,
+              prTitle: data.prData.title,
+              review: data.review,
+              shareUrl,
+            });
+            setLastEmailRecipient(recipientEmail);
+            setEmailSent(true);
+            setTimeout(() => setEmailSent(false), 4000);
+          } catch (emailErr) {
+            console.error('Failed to send review email:', emailErr);
+            setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
+            setTimeout(() => setEmailError(null), 6000);
+          }
         }
       }
     } catch (err) {
@@ -156,20 +173,24 @@ export default function Home() {
       setResult(data);
       setEmailError(null);
       if (data?.review) {
-        try {
-          const shareUrl = await generateShareUrl(data.prData, data.review);
-          await sendReviewEmail({
-            toEmail: userEmail || user?.email || null,
-            prTitle: 'Raw Diff Review',
-            review: data.review,
-            shareUrl,
-          });
-          setEmailSent(true);
-          setTimeout(() => setEmailSent(false), 4000);
-        } catch (emailErr) {
-          console.error('Failed to send review email:', emailErr);
-          setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
-          setTimeout(() => setEmailError(null), 6000);
+        const recipientEmail = userEmail || user?.email;
+        if (recipientEmail) {
+          try {
+            const shareUrl = await generateShareUrl(data.prData, data.review);
+            await sendReviewEmail({
+              toEmail: recipientEmail,
+              prTitle: 'Raw Diff Review',
+              review: data.review,
+              shareUrl,
+            });
+            setLastEmailRecipient(recipientEmail);
+            setEmailSent(true);
+            setTimeout(() => setEmailSent(false), 4000);
+          } catch (emailErr) {
+            console.error('Failed to send review email:', emailErr);
+            setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
+            setTimeout(() => setEmailError(null), 6000);
+          }
         }
       }
     } catch (err) {
@@ -340,7 +361,7 @@ export default function Home() {
         {emailSent && (
           <div className="mt-4 flex items-center gap-2 text-emerald-300 text-sm bg-emerald-950 border border-emerald-800 rounded-xl px-4 py-3 animate-fade-in">
             <span>✅</span>
-            <span>Review summary sent to <strong>{user?.email}</strong></span>
+            <span>Review summary sent to <strong>{lastEmailRecipient}</strong></span>
           </div>
         )}
 
