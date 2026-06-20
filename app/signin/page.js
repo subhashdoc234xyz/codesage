@@ -60,16 +60,40 @@ export default function SignInPage() {
       provider.addScope('user:email');
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+
+      const credential = GithubAuthProvider.credentialFromResult(result);
+      const accessToken = credential?.accessToken;
+      let primaryEmail = user.email;
+
+      if (accessToken) {
+        try {
+          const res = await fetch('https://api.github.com/user/emails', {
+            headers: { Authorization: `token ${accessToken}` },
+          });
+          const emails = await res.json();
+          if (Array.isArray(emails)) {
+            const emailObj = emails.find(e => e.primary && e.verified);
+            if (emailObj) {
+              primaryEmail = emailObj.email;
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching email from GitHub:", e);
+        }
+      }
+
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', user.uid), {
-          email: user.email,
+          email: primaryEmail,
           name: user.displayName,
           photo: user.photoURL,
           createdAt: serverTimestamp(),
           uid: user.uid,
           provider: 'github',
         });
+      } else {
+        await setDoc(doc(db, 'users', user.uid), { email: primaryEmail }, { merge: true });
       }
       router.push('/');
     } catch (err) {

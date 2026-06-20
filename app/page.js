@@ -12,13 +12,15 @@ import { generateShareUrl } from '@/lib/share';
 
 // Firebase imports for auth protection
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 import AuthPage from '@/components/AuthPage';
 
 export default function Home() {
   // Authentication states
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -43,8 +45,22 @@ export default function Home() {
       setAuthLoading(false);
       return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        if (db) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (userDoc.exists()) {
+              setUserEmail(userDoc.data().email);
+            }
+          } catch (e) {
+            console.error("Error fetching user email from Firestore:", e);
+          }
+        }
+      } else {
+        setUserEmail(null);
+      }
       setAuthLoading(false);
     });
     return () => unsubscribe();
@@ -102,7 +118,7 @@ export default function Home() {
         try {
           const shareUrl = await generateShareUrl(data.prData, data.review);
           await sendReviewEmail({
-            toEmail: user?.email || null,
+            toEmail: userEmail || user?.email || null,
             prTitle: data.prData.title,
             review: data.review,
             shareUrl,
@@ -143,7 +159,7 @@ export default function Home() {
         try {
           const shareUrl = await generateShareUrl(data.prData, data.review);
           await sendReviewEmail({
-            toEmail: user?.email || null,
+            toEmail: userEmail || user?.email || null,
             prTitle: 'Raw Diff Review',
             review: data.review,
             shareUrl,
