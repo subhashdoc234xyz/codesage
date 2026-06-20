@@ -26,18 +26,37 @@ export default function AuthPage() {
     setSuccess("");
     try {
       const provider = new GoogleAuthProvider();
+      provider.addScope('email'); // explicitly request email scope, just in case
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Robust email capture: check top-level and then providerData
+      console.log('RAW Google user.email:', user.email);
+      console.log('RAW Google user.providerData:', user.providerData);
+
       let capturedEmail = user.email;
+
       if (!capturedEmail && user.providerData) {
         for (const profile of user.providerData) {
           if (profile.email) {
             capturedEmail = profile.email;
+            console.log('Email recovered from providerData:', capturedEmail);
             break;
           }
         }
+      }
+
+      // Additional fallback: extract email from the Google ID token credential
+      if (!capturedEmail) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        console.log('Google credential object:', credential);
+        // The credential itself usually doesn't carry email directly, but log it
+        // so we can inspect the full shape if everything else is empty.
+      }
+
+      console.log('FINAL capturedEmail for Google sign-in:', capturedEmail);
+
+      if (!capturedEmail) {
+        console.error('CRITICAL: Google sign-in completed but NO email could be captured from any source.');
       }
 
       if (db) {
