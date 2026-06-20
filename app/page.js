@@ -134,13 +134,18 @@ export default function Home() {
         // Final fallback: re-fetch directly from Firestore in case the
         // onSnapshot listener hasn't delivered yet
         if (!recipientEmail && db && user?.uid) {
-          try {
-            const freshDoc = await getDoc(doc(db, 'users', user.uid));
-            if (freshDoc.exists()) {
-              recipientEmail = freshDoc.data().email;
+          for (let attempt = 0; attempt < 3 && !recipientEmail; attempt++) {
+            try {
+              if (attempt > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1s between retries
+              }
+              const freshDoc = await getDoc(doc(db, 'users', user.uid));
+              if (freshDoc.exists() && freshDoc.data().email) {
+                recipientEmail = freshDoc.data().email;
+              }
+            } catch (e) {
+              console.error(`Fallback Firestore fetch attempt ${attempt + 1} failed:`, e);
             }
-          } catch (e) {
-            console.error('Fallback Firestore fetch failed:', e);
           }
         }
 
@@ -200,13 +205,18 @@ export default function Home() {
         // Final fallback: re-fetch directly from Firestore in case the
         // onSnapshot listener hasn't delivered yet
         if (!recipientEmail && db && user?.uid) {
-          try {
-            const freshDoc = await getDoc(doc(db, 'users', user.uid));
-            if (freshDoc.exists()) {
-              recipientEmail = freshDoc.data().email;
+          for (let attempt = 0; attempt < 3 && !recipientEmail; attempt++) {
+            try {
+              if (attempt > 0) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // wait 1s between retries
+              }
+              const freshDoc = await getDoc(doc(db, 'users', user.uid));
+              if (freshDoc.exists() && freshDoc.data().email) {
+                recipientEmail = freshDoc.data().email;
+              }
+            } catch (e) {
+              console.error(`Fallback Firestore fetch attempt ${attempt + 1} failed:`, e);
             }
-          } catch (e) {
-            console.error('Fallback Firestore fetch failed:', e);
           }
         }
 

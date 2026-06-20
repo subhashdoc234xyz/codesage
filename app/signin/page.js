@@ -90,6 +90,9 @@ export default function SignInPage() {
           const res = await fetch('https://api.github.com/user/emails', {
             headers: { Authorization: `token ${accessToken}` },
           });
+          if (!res.ok) {
+            console.error('GitHub /user/emails API failed with status:', res.status);
+          }
           const emails = await res.json();
           if (Array.isArray(emails)) {
             // First try primary + verified
@@ -101,7 +104,11 @@ export default function SignInPage() {
 
             if (emailObj) {
               primaryEmail = emailObj.email;
+            } else {
+              console.error('No primary verified email found in GitHub response:', emails);
             }
+          } else {
+            console.error('GitHub /user/emails returned non-array:', emails);
           }
         } catch (e) {
           console.error("Error fetching email from GitHub:", e);
