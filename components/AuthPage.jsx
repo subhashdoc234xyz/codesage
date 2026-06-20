@@ -29,11 +29,22 @@ export default function AuthPage() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
+      // Robust email capture: check top-level and then providerData
+      let capturedEmail = user.email;
+      if (!capturedEmail && user.providerData) {
+        for (const profile of user.providerData) {
+          if (profile.email) {
+            capturedEmail = profile.email;
+            break;
+          }
+        }
+      }
+
       if (db) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (!userDoc.exists()) {
           await setDoc(doc(db, "users", user.uid), {
-            email: user.email,
+            email: capturedEmail,
             name: user.displayName,
             photo: user.photoURL,
             createdAt: serverTimestamp(),
@@ -42,7 +53,7 @@ export default function AuthPage() {
           });
         } else {
           await setDoc(doc(db, "users", user.uid), {
-            email: user.email,
+            email: capturedEmail,
             name: user.displayName,
             photo: user.photoURL,
             provider: "google",
@@ -85,7 +96,13 @@ export default function AuthPage() {
           });
           const emails = await res.json();
           if (Array.isArray(emails)) {
-            const emailObj = emails.find(e => e.primary && e.verified);
+            // First try primary + verified
+            let emailObj = emails.find(e => e.primary && e.verified);
+            // Fallback to just primary if no verified primary found
+            if (!emailObj) emailObj = emails.find(e => e.primary);
+            // Fallback to first verified
+            if (!emailObj) emailObj = emails.find(e => e.verified);
+
             if (emailObj) {
               primaryEmail = emailObj.email;
             }
@@ -107,7 +124,11 @@ export default function AuthPage() {
             provider: "github",
           });
         } else {
-          await setDoc(doc(db, "users", user.uid), { email: primaryEmail }, { merge: true });
+          await setDoc(doc(db, "users", user.uid), {
+            email: primaryEmail,
+            name: user.displayName,
+            photo: user.photoURL,
+          }, { merge: true });
         }
       }
       setSuccess("Success! Preparing your workspace...");
