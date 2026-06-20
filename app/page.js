@@ -128,7 +128,24 @@ export default function Home() {
       setResult(data);
       setEmailError(null);
       if (data?.review) {
-        const recipientEmail = userEmail || user?.email;
+        let recipientEmail = userEmail || user?.email;
+        console.log('Attempting email send. recipientEmail:', recipientEmail, 'userEmail state:', userEmail, 'user.email:', user?.email);
+
+        // Final fallback: re-fetch directly from Firestore in case the
+        // onSnapshot listener hasn't delivered yet
+        if (!recipientEmail && db && user?.uid) {
+          try {
+            const freshDoc = await getDoc(doc(db, 'users', user.uid));
+            if (freshDoc.exists()) {
+              recipientEmail = freshDoc.data().email;
+            }
+          } catch (e) {
+            console.error('Fallback Firestore fetch failed:', e);
+          }
+        }
+
+        console.log('Final recipientEmail after fallback fetch:', recipientEmail);
+
         if (recipientEmail) {
           try {
             const shareUrl = await generateShareUrl(data.prData, data.review);
@@ -146,6 +163,10 @@ export default function Home() {
             setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
             setTimeout(() => setEmailError(null), 6000);
           }
+        } else {
+          console.error('No recipient email available — email NOT sent.');
+          setEmailError('Could not determine your email address. Please re-login.');
+          setTimeout(() => setEmailError(null), 6000);
         }
       }
     } catch (err) {
@@ -173,7 +194,24 @@ export default function Home() {
       setResult(data);
       setEmailError(null);
       if (data?.review) {
-        const recipientEmail = userEmail || user?.email;
+        let recipientEmail = userEmail || user?.email;
+        console.log('Attempting email send. recipientEmail:', recipientEmail, 'userEmail state:', userEmail, 'user.email:', user?.email);
+
+        // Final fallback: re-fetch directly from Firestore in case the
+        // onSnapshot listener hasn't delivered yet
+        if (!recipientEmail && db && user?.uid) {
+          try {
+            const freshDoc = await getDoc(doc(db, 'users', user.uid));
+            if (freshDoc.exists()) {
+              recipientEmail = freshDoc.data().email;
+            }
+          } catch (e) {
+            console.error('Fallback Firestore fetch failed:', e);
+          }
+        }
+
+        console.log('Final recipientEmail after fallback fetch:', recipientEmail);
+
         if (recipientEmail) {
           try {
             const shareUrl = await generateShareUrl(data.prData, data.review);
@@ -191,6 +229,10 @@ export default function Home() {
             setEmailError(emailErr?.text || emailErr?.message || 'Failed to send email');
             setTimeout(() => setEmailError(null), 6000);
           }
+        } else {
+          console.error('No recipient email available — email NOT sent.');
+          setEmailError('Could not determine your email address. Please re-login.');
+          setTimeout(() => setEmailError(null), 6000);
         }
       }
     } catch (err) {
