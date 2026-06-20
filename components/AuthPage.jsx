@@ -29,8 +29,12 @@ export default function AuthPage() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
+      console.log('RAW Google user object email:', user.email);
+      console.log('RAW Google user object full:', user);
+
       if (db) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
+        console.log('Doc exists before write:', userDoc.exists());
         if (!userDoc.exists()) {
           await setDoc(doc(db, "users", user.uid), {
             email: user.email,
@@ -40,6 +44,7 @@ export default function AuthPage() {
             uid: user.uid,
             provider: "google",
           });
+          console.log('Created new doc with email:', user.email);
         } else {
           await setDoc(doc(db, "users", user.uid), {
             email: user.email,
@@ -47,7 +52,11 @@ export default function AuthPage() {
             photo: user.photoURL,
             provider: "google",
           }, { merge: true });
+          console.log('Merged existing doc with email:', user.email);
         }
+
+        const verifyDoc = await getDoc(doc(db, "users", user.uid));
+        console.log('Doc data immediately after write:', verifyDoc.data());
       }
       setSuccess("Success! Preparing your workspace...");
     } catch (err) {

@@ -29,7 +29,12 @@ export default function SignInPage() {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+
+      console.log('RAW Google user object email:', user.email);
+      console.log('RAW Google user object full:', user);
+
       const userDoc = await getDoc(doc(db, 'users', user.uid));
+      console.log('Doc exists before write:', userDoc.exists());
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', user.uid), {
           email: user.email,
@@ -39,6 +44,7 @@ export default function SignInPage() {
           uid: user.uid,
           provider: 'google',
         });
+        console.log('Created new doc with email:', user.email);
       } else {
         await setDoc(doc(db, 'users', user.uid), {
           email: user.email,
@@ -46,7 +52,11 @@ export default function SignInPage() {
           photo: user.photoURL,
           provider: 'google',
         }, { merge: true });
+        console.log('Merged existing doc with email:', user.email);
       }
+
+      const verifyDoc = await getDoc(doc(db, 'users', user.uid));
+      console.log('Doc data immediately after write:', verifyDoc.data());
       router.push('/');
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') setError('Sign in cancelled. Please try again.');
