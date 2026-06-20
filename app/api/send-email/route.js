@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+export const runtime = 'nodejs';
+
 export async function POST(req) {
   try {
     // 1. Parse the request body
@@ -252,8 +254,8 @@ export async function POST(req) {
     return NextResponse.json({ success: true });
 
   } catch (err) {
+    console.error('FULL EMAIL ERROR:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('❌ Email send error:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
