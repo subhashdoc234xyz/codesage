@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CodeSage AI
 
-## Getting Started
+**AI-Powered GitHub Pull Request Reviewer**
 
-First, run the development server:
+![CodeSage AI Banner](./public/banner.png)
+
+🔗 **Live Demo:** https://codesage-sable.vercel.app/
+
+CodeSage AI is an AI-powered GitHub Pull Request reviewer that gives developers instant, intelligent code feedback. Paste a raw PR diff or a GitHub PR URL, and get a detailed AI review covering bugs, security issues, code quality, and best practices — powered by Gemini 2.5 Flash.
+
+Built for the OSC AI Build 1.0 Hackathon by Team xeno2.
+
+## ✨ Features
+
+- 🤖 AI-powered PR review using Gemini 2.5 Flash
+- 🔐 Google & GitHub OAuth authentication via Firebase
+- 🔗 Shareable review links for team collaboration
+- 📄 Export review reports as Markdown (.md) files
+- 📧 Email notifications sent to the logged-in user after each review
+- 💻 Clean, responsive UI built with Next.js
+- 🔍 Monaco Diff Viewer for side-by-side code comparison
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js (App Router) |
+| Authentication & Database | Firebase Auth + Firestore |
+| AI Model | Gemini 2.5 Flash (Google) |
+| Email | Nodemailer + Gmail SMTP |
+| Deployment | Vercel |
+
+## 🏗️ Architecture
+
+```
+User pastes PR diff/URL on Next.js frontend
+        ↓
+Firebase handles Google/GitHub authentication
+        ↓
+PR diff sent to Gemini 2.5 Flash API
+        ↓
+AI generates detailed review (bugs, security, quality, best practices)
+        ↓
+Results displayed on dashboard + email notification sent to user
+        ↓
+User can share review link or export as Markdown
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- A Firebase project (Auth + Firestore enabled)
+- A Gmail account with an App Password for email notifications
+- A Gemini API key
+
+### Installation
+
+```bash
+git clone https://github.com/subhashdoc234xyz/codesage.git
+cd codesage
+npm install
+```
+
+### Environment Variables
+
+Create a `.env.local` file with:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+
+GEMINI_API_KEY=
+
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
+```
+
+### Run Locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 📦 Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+This project is deployed on [Vercel](https://vercel.com). To deploy your own instance, connect this repository to Vercel and add the same environment variables listed above in your Vercel project settings.
 
-## Learn More
+## 👥 Team xeno2
 
-To learn more about Next.js, take a look at the following resources:
+- Subhash B
+- Sathish E
+- Vijayalakshmi R
+- Y Sandhya Rani
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📄 License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+This project was built for OSC AI Build 1.0 Hackathon.
